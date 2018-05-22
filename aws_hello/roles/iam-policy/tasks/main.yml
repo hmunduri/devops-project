@@ -1,0 +1,8 @@
+---
+- name: "Create IAM Policy"
+  iam_policy:
+    iam_type: role
+    iam_name: "{{iam_role_name}}"
+    policy_name: "{{iam_policy_name}}"
+    state: "{{provision}}"
+    policy_json: "{{lookup('file','../files/iam-pol-service.json')}}"

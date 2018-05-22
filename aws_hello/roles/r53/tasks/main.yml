@@ -1,0 +1,14 @@
+---
+- route53:
+    state: "{{provision}}"
+    zone: cloudera9.com
+    record: "{{dns_name}}.cloudera9.com"
+    overwrite: yes
+    type: CNAME
+    ttl: 60
+    value: "{{elb_dns_name}}"
+    wait: yes
+  register: route
+  until: route | success
+  retries: 10
+  delay: 30

@@ -1,0 +1,48 @@
+---
+- shell: aws acm list-certificates --output text | grep {{certificate_name}} | awk '{print $2}'
+  register: arn
+
+- set_fact: cert_arn={{arn.stdout}}
+
+- name: "Gathering required subnets from VPC"
+  ec2_vpc_subnet_facts:
+    region: "{{region_name}}"
+    filters:
+      "tag:env": "{{env}}"
+  register: gathered_subnets
+
+- name: "Check if ELB already exists"
+  ec2_elb_facts:
+   names:
+    - "{{elb_name}}"
+   region: "{{region_name}}"
+  register: gathered_elb
+  ignore_errors: True
+
+- name: " Elastic Load Balancer (ELB) provisioning for VPC"
+  ec2_elb_lb:
+    state: "{{provision}}"
+    name: "{{elb_name}}"
+    scheme: "{{elb_scheme}}"
+    cross_az_load_balancing: yes
+    region: "{{region_name}}"
+    security_group_ids: "{{sg_id}}"
+    subnets: "{{gathered_subnets.subnets[0].id}}, {{gathered_subnets.subnets[1].id}}"
+    listeners:
+      - protocol: HTTPS
+        load_balancer_port: 443
+        instance_protocol: HTTP
+        instance_port: 80
+        ssl_certificate_id: "{{cert_arn}}"
+    tags:
+      Name: "{{elb_name}}"
+  ignore_errors: True
+
+- name: "Gather ELB Information"
+  ec2_elb_facts:
+   names:
+    - "{{elb_name}}"
+   region: "{{region_name}}"
+  register: gathered_elb_dns
+
+- set_fact: elb_dns_name={{gathered_elb_dns.elbs.0.dns_name}}

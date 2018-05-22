@@ -1,0 +1,6 @@
+---
+- name: "Create IAM Role"
+  iam:
+    iam_type: role
+    name: "{{iam_role_name}}"
+    state: "{{provision}}"

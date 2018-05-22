@@ -1,0 +1,38 @@
+---
+region_name: us-east-1
+resource_name: hima-devops-project
+iam_role_name: "{{resource_name}}"
+iam_policy_name: "{{resource_name}}"
+sg_name: "{{resource_name}}"
+certificate_name: "*.cloudera9.com"
+elb_name: "{{resource_name}}"
+elb_scheme: internet-facing
+dns_name: hello
+lc_name: "{{resource_name}}"
+ami_id: ami-14c5486b
+key_pair: devopsreg
+instance_size: t2.micro
+lc_public_ip: true
+user_data:  |
+  #!/bin/bash
+  set -x
+  cd /home/ec2-user/
+  yum update -y
+  yum install docker -y
+  yum install jq -y
+  service docker start
+  echo "Dependency installation completed" >> startup.log
+  INSTANCE_ID=$(curl --silent http://169.254.169.254/latest/meta-data/instance-id)
+  echo $INSTANCE_ID >> startup.log
+  REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region)
+  echo $REGION >> startup.log
+  ELB_NAME=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=Name" --region=$REGION --output=text | cut -f5)
+  echo $ELB_NAME >> startup.log
+  $(aws ecr get-login --no-include-email --region $REGION) >> startup.log
+  docker run -d -p 80:80 319763685211.dkr.ecr.us-east-1.amazonaws.com/hima-helloworld:latest >> startup.log
+  aws elb register-instances-with-load-balancer --load-balancer-name $ELB_NAME --instances $INSTANCE_ID --region $REGION >> startup.log
+asg_name: "{{resource_name}}"
+desired: 1
+minimum: 1
+maximum: 1
+instance_name: "{{resource_name}}"

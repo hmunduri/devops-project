@@ -1,0 +1,39 @@
+---
+- name: "Gather AMI ID needed for Launch Configuration"
+  ec2_ami_find:
+    region: "{{region_name}}"
+    ami_tags:
+      type: "{{ami_type}}"
+  register: gathered_ami
+
+- set_fact: root_iops={{root_volume_size|int * 3}}
+- set_fact: volume1_iops={{volume1_size|int * 3}}
+- set_fact:
+     key_pair: ""
+  when: ("{{env}}" != "dev")
+
+- name: "Launch Configuration provisioning for {{env}} environment"
+  ec2_lc:
+    region: "{{region_name}}"
+    name: "{{lc_name}}"
+    state: "{{provision}}"
+    image_id: "{{gathered_ami.results[0].ami_id}}"
+    key_name: "{{key_pair}}"
+    security_groups: "{{sg_id}}"
+    instance_profile_name: "{{iam_role_name}}"
+    instance_monitoring: False
+    instance_type: "{{instance_size}}"
+    assign_public_ip: "{{lc_public_ip}}"
+    user_data: "{{user_data}}"
+    volumes:
+      - device_name: "{{root_device}}"
+        volume_size: "{{root_volume_size}}"
+        device_type: gp2
+        iops: "{{root_iops}}"
+        delete_on_termination: True
+      - device_name: "{{volume1_device}}"
+        volume_size: "{{volume1_size}}"
+        device_type: gp2
+        iops: "{{volume1_iops}}"
+        delete_on_termination: True
+  register: ec2_lc

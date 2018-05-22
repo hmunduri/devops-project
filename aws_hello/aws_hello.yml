@@ -1,0 +1,16 @@
+---
+- hosts: localhost
+  gather_facts: True
+  vars:
+    env: default
+    provision: present
+  vars_files:
+    - ["vars/vars.yml"]
+  roles:
+    - {role: iam-role, tags: ['iam-role']}
+    - {role: iam-policy, tags: ['iam-policy']}
+    - {role: sg, tags: ['asg-sg']}
+    - {role: elb, tags: ['elb']}
+    - {role: r53, tags: ['r53']}
+    - {role: lc, tags: ['lc']}
+    - {role: asg, tags: ['asg']}

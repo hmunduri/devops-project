@@ -1,0 +1,39 @@
+---
+- name: "Gather facts about the VPC of the environment"
+  ec2_vpc_net_facts:
+    region: "{{region_name}}"
+    filters:
+      "tag:env": default
+  register: vpc_facts
+
+- name: "Create security group"
+  ec2_group:
+    state: "{{provision}}"
+    region: "{{region_name}}"
+    name: "{{sg_name}}"
+    description: "{{sg_name}}"
+    vpc_id: "{{vpc_facts.vpcs[0].id}}"
+    rules:
+      - proto: tcp
+        from_port: 443
+        to_port: 443
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 80
+        to_port: 80
+        cidr_ip: 0.0.0.0/0
+  register: aws_sg
+
+- name: Adding Tag Names
+  local_action:
+    module: ec2_tag
+    region: "{{region_name}}"
+    resource: "{{aws_sg.group_id}}"
+    state: "{{provision}}"
+    tags:
+      Name: "{{sg_name}}"
+      env: "{{env}}"
+      author: himagiri
+      project: devops
+
+- set_fact: sg_id={{aws_sg.group_id}}

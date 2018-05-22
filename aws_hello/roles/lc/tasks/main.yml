@@ -1,0 +1,15 @@
+---
+- name: "Create Launch Configuration"
+  ec2_lc:
+    region: "{{region_name}}"
+    name: "{{lc_name}}"
+    state: "{{provision}}"
+    image_id: "{{ami_id}}"
+    key_name: "{{key_pair}}"
+    security_groups: "{{sg_id}}"
+    instance_profile_name: "{{iam_role_name}}"
+    instance_monitoring: False
+    instance_type: "{{instance_size}}"
+    assign_public_ip: "{{lc_public_ip}}"
+    user_data: "{{user_data}}"
+  register: ec2_lc
